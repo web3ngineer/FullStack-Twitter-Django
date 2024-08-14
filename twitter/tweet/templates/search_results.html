@@ -1,16 +1,11 @@
 {% extends "layout.html" %}
 
-{% block title %}
-    Tweet
-{% endblock title %}
-
 {% block content %}
-    <h1 class='text-center text-white mt-4'>Welcome to Django Tweet Project</h1>
+<h1>Search Results for "{{ query }}"</h1>
 
-    <a href="{% url "tweet_create" %}" class='btn btn-primary mb-3'>Create a Tweet</a>
-
-    <div class='container row gap-3 justify-content-center'>
-        {% for tweet in tweets %}
+{% if page_obj %}
+    <div class='container row gap-3'>
+        {% for tweet in page_obj %}
         <div class="card mb-3" style='width:18rem;'>
             <img src="{% if tweet.photo %}{{ tweet.photo.url }}{% else %} "" {% endif %}" alt="...loading" class='card-img-top pt-3' height='200px'>
             <div class="card-body">
@@ -26,25 +21,27 @@
                 {% endif %}
             </div>
         </div>
-        {% empty %}
-        <p>No tweets available.</p>
         {% endfor %}
     </div>
-    <div class="container d-flex justify-content-center mb-4">
+    <!-- Pagination controls -->
+    <div class="pagination">
         <span class="step-links">
-            {% if page_number > 1 %}
-                <a href="?page=1&limit={{ limit }}">&laquo; first</a>
-                <a href="?page={{ page_number|add:"-1" }}&limit={{ limit }}">previous</a>
+            {% if page_obj.has_previous %}
+                <a href="?query={{ query }}&page=1">&laquo; first</a>
+                <a href="?query={{ query }}&page={{ page_obj.previous_page_number }}">previous</a>
             {% endif %}
 
             <span class="current">
-                Page {{ page_number }} of {{ total_pages }}.
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
             </span>
 
-            {% if page_number < total_pages %}
-                <a href="?page={{ page_number|add:"1" }}&limit={{ limit }}">next</a>
-                <a href="?page={{ total_pages }}&limit={{ limit }}">last &raquo;</a>
+            {% if page_obj.has_next %}
+                <a href="?query={{ query }}&page={{ page_obj.next_page_number }}">next</a>
+                <a href="?query={{ query }}&page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
             {% endif %}
         </span>
     </div>
+{% else %}
+    <p>No results found.</p>
+{% endif %}
 {% endblock content %}

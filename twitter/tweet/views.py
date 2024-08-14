@@ -4,6 +4,8 @@ from .models import Tweet
 from .forms import TweetForm, UserRegistrationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
+from django.db.models import Q
+
 
 
 # Create your views here.
@@ -11,8 +13,30 @@ def index(request):
     return render(request, 'index.html')
 
 def tweet_list(request):
-    tweets = Tweet.objects.all().order_by('-created_at')
-    return render(request, 'tweet_list.html', {'tweets': tweets})
+    # tweets = Tweet.objects.all().order_by('-created_at')
+    # return render(request, 'tweet_list.html', {'tweets': tweets})
+    
+    page_number = int(request.GET.get('page', 1))
+    limit = int(request.GET.get('limit', 8))
+
+    # Calculate the starting point (offset)
+    offset = (page_number - 1) * limit
+
+    # Query the database with limit and offset
+    tweets = Tweet.objects.all().order_by('-created_at')[offset:offset + limit]
+
+    # Calculate the total number of pages
+    total_tweets = Tweet.objects.count()
+    total_pages = (total_tweets + limit - 1) // limit  
+
+    context = {
+        'tweets': tweets,
+        'page_number': page_number,
+        'total_pages': total_pages,
+        'limit': limit,
+    }
+
+    return render(request, 'tweet_list.html', context)
 
 @login_required
 def tweet_create(request):
@@ -63,4 +87,21 @@ def register(request):
             return redirect('tweet_list')
     else:
         form = UserRegistrationForm()
-    return render(request, 'registration/register.html', {form:'form'})
+    return render(request, 'registration/register.html', {'form':form})
+
+
+from django.core.paginator import Paginator
+
+def search_results(request):
+    query = request.GET.get('query')
+    if query:
+        results = Tweet.objects.filter(Q(text__icontains=query))
+    else:
+        results = Tweet.objects.none()  
+        
+    # Paginate the results
+    paginator = Paginator(results, 8) 
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'search_results.html', {'page_obj': page_obj, 'query': query})
